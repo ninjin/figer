@@ -1,8 +1,10 @@
 package edu.washington.cs.figer;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -128,8 +130,42 @@ public class Main {
 				LRPerceptronLearner.MAX_ITER_NUM = X.MAX_ITER_NUM;
 				LRPerceptronLearner.STEP = X.PERCEPTRON_STEP;
 				//
-				// sample a portion as dev
-				Random rand = new Random(10349);
+				// construct dev
+				HashSet<Integer> trainMentionIds = new HashSet<Integer>();
+				HashSet<Integer> devMentionIds = new HashSet<Integer>();
+				try {
+					BufferedReader trainFile = new BufferedReader(new FileReader("train_mention_ids.txt"));
+					String line = trainFile.readLine();
+					while (line != null) {
+						trainMentionIds.add(Integer.parseInt(line));
+						line = trainFile.readLine();
+				}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				try {
+					BufferedReader devFile = new BufferedReader(new FileReader("dev_mention_ids.txt"));
+					String line = devFile.readLine();
+					while (line != null) {
+						devMentionIds.add(Integer.parseInt(line));
+						line = devFile.readLine();
+				}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				for (Instance x : train.getInstances()) {
+					if (devMentionIds.contains(x.id)) {
+						test.add(x);
+					}
+				}
+				Iterator<Instance> it = train.getInstances().iterator();
+				while (it.hasNext()) {
+					Instance x = it.next();
+					if (!trainMentionIds.contains(x.id)) {
+						it.remove();
+					}
+				}
+				/*Random rand = new Random(10349);
 				Iterator<Instance> iterator = train.getInstances().iterator();
 				while (iterator.hasNext()) {
 					Instance x = iterator.next();
@@ -137,7 +173,7 @@ public class Main {
 						test.add(x);
 						iterator.remove();
 					}
-				}
+				}*/
 				
 				l.learn(train, model);
 				testDev(test, model);
@@ -464,12 +500,14 @@ public class Main {
 			TObjectIntMap<Label> labelFreq) throws Exception {
 		MentionReader reader = MentionReader.getMentionReader(tFile);
 		edu.washington.cs.figer.data.EntityProtos.Mention m = null;
+		int id = 0;
 		while ((m = reader.readMention()) != null) {
 			// filtering
 			if (m.getTokensCount() < 15 || m.getTokensCount() > 50)
 				continue;
 
 			Instance inst = (Instance) X.instanceClass.newInstance();
+			inst.id = id++;
 			for (String str : m.getLabelsList()) {
 				String mappedType = MapType.mapping.get(str);
 				if (mappedType != null)

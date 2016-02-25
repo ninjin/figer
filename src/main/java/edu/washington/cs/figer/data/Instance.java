@@ -14,6 +14,7 @@ import java.io.Serializable;
 public class Instance implements Serializable {
 
 	private static final long serialVersionUID = -851405716099693492L;
+	public int id = -1;
 	public Label label = null;
 	protected TIntList featureIndex = new TIntArrayList();
 	protected TDoubleList featureValue = new TDoubleArrayList();
